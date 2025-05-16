@@ -44,6 +44,11 @@
 
     <modules>
         <module>labs/passkeys</module>
+        <module>labs/token-exchange/spring-authorization-server</module>
+        <module>labs/token-exchange/target-resource-server</module>
+        <module>labs/token-exchange/token-exchange-client</module>
+        <module>labs/token-exchange/token-exchange-resource-server</module>
+        <module>labs/enhanced-authorization</module>
     </modules>
 
     <repositories>

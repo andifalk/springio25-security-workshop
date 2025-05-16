@@ -6,30 +6,26 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.0-RC1</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/> <!-- lookup parent from the repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>passkeys</artifactId>
+    <artifactId>token-exchange-client</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Passkeys Lab</name>
-    <description>Passkeys Lab</description>
+    <name>Token Exchange Client</name>
+    <description>OAuth2 Client for the Token Exchange Demo</description>
     <properties>
         <java.version>21</java.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.webauthn4j</groupId>
-            <artifactId>webauthn4j-core</artifactId>
-            <version>0.29.0.RELEASE</version>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -56,7 +52,6 @@
             </plugin>
         </plugins>
     </build>
-
     <repositories>
         <repository>
             <id>spring-milestones</id>
@@ -77,4 +72,5 @@
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
+
 </project>

@@ -28,7 +28,7 @@ public class WebSecurityConfiguration {
                 )
                 .headers(headers -> headers.httpStrictTransportSecurity(HstsConfig::disable))
                 .httpBasic(withDefaults())
-                .formLogin(withDefaults())
+                .formLogin(withDefaults());
         return http.build();
     }
 

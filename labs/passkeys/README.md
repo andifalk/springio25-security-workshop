@@ -1,4 +1,4 @@
-# 🧪 Authentication with Passkeys 
+# 🧪 Authentication with Passkeys Lab
 
 ## 🎯 Objective
 
@@ -6,20 +6,20 @@ Learn how authentication with Passkeys works and is implemented using Spring Sec
 
 ---
 
-## 🧰 Prerequisites
+## 🧰 Lab Prerequisites
 
 - Java 21 or higher
 - A Java IDE (IntelliJ, Eclipse, etc.)
 - Access to a modern web browser (Chrome, Firefox, Safari, etc.)
 - Operating System compatible with Passkeys (macOS, Windows 11) and/or a cross-device secret store like 1Password
-- A working local domain (e.g., `server.local`) with a valid TLS certificate
+- A working local domain (e.g., `server.test`) with a valid TLS certificate
 - [mkcert](https://github.com/FiloSottile/mkcert) installed on your machine to create a local CA and trusted certificates
 
 ### 🛠️ Setup
 
 #### mkcert
 
-To quickly set up a TLS configuration required for Passkeys we need to install the tool [mkcert](https://github.com/FiloSottile/mkcert). [mkcert](https://github.com/FiloSottile/mkcert) is a simple tool for making locally-trusted development certificates.
+To quickly set up a TLS configuration required for Passkeys, we need to install the tool [mkcert](https://github.com/FiloSottile/mkcert). [mkcert](https://github.com/FiloSottile/mkcert) is a simple tool for making locally-trusted development certificates.
 
 On **MacOS**, you can install [mkcert](https://github.com/FiloSottile/mkcert) using Homebrew:
 
