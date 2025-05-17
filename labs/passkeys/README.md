@@ -85,6 +85,32 @@ public class WebSecurityConfiguration {
 }
 ```
 
+📌 Parameter Explanations
+
+1. .rpName("Spring Security Relying Party")
+   - rpName = “Relying Party Name”
+   - Human-readable name of your application or service (e.g. "GitHub" or "MyApp").
+   - Shown to users during credential registration (passkey creation) in browser prompts.
+   
+    🧠 Think of it as the “display name” of your app during passkey registration.
+
+2. .rpId("example.com")
+   - rpId = “Relying Party ID”
+   - The domain name of the relying party (your service).
+   - Used to scope the credential (passkey is only usable for this RP ID).
+   - Must match or be a parent domain of the domain used to access the site.
+
+   ⚠️ rpId must match the origin used in the browser, e.g.:
+   - If your frontend runs at https://login.example.com, then rpId can be example.com
+   - If it’s https://localhost, your rpId must be localhost
+
+3. .allowedOrigins("https://example.com")
+   - Defines which origins are allowed to initiate WebAuthn operations.
+   - Origin = scheme + domain + port, e.g. https://example.com:443
+   - Helps prevent WebAuthn requests from unauthorized websites (same-origin policy enforcement).
+
+✅ Must exactly match what the browser sees — including https and any custom port.
+
 ---
 
 ### Step 3: Run the application (with Passkeys)
@@ -97,15 +123,58 @@ Now navigate your browser to [localhost:8080](http://localhost:8080). First, you
 - **Hello**: This calls a testing API that welcomes you as a user
 - **Log Out**: Force a logout, i.e., to test logging in using a passkey
 
+#### Test Scenario
+
+1. **Login**: First login using the standard login with username and password. Use `user` and `password` as credentials.
+![Login Screen](image/login_with_passkeys.png "Login Screen")
+
+2. **Register**: Click on the register link and follow the instructions to register your Passkey. You can use your browser's built-in Passkey support or a third-party application like 1Password.  
+The Passkey label is the name of the Passkey you want to register. You can use any name you like, but it is recommended to use a meaningful name.
+   - If you are using a browser, you will be prompted to create a Passkey using the built-in Passkey support.
+   - If you are using 1Password, you will be prompted to create a Passkey using the 1Password application.
+![Register Passkey](image/register_passkey.png "Register Passkey")
+![Register Passkey in Apple Passwords](image/register_app_passwords.png "Register Passkey in Apple Passwords")
+
+3. **Login with Passkey**: After registering your Passkey, you can log in using the Passkey. First log out of the application using the URL ``. Now click on the **Login with Passkey** link and follow the instructions to log in using the Passkey. You will be prompted to select the Passkey you want to use.
+![Select Authenticator](image/authenticator_selection.png "Select Authenticator")
+
+4. **Hello API**: After logging in with the Passkey, you will be redirected to the welcome page. Click on the **Call Hello API** link to call the testing API that welcomes you as a user.
+
+If you have used your phone or another device to register the Passkey, you will be prompted to use that device to log in. This is the cross-device feature of Passkeys.
+
+![Phone Authenticator](image/phone_authenticator.png "Phone Authenticator")
+
+
+**Note**
+Look inside the `src/main/java/com/example/passkeys/HelloApi.java` class to see how the `Principle` differs depending on the Authentication mechanism. 
+
+```java
+@RestController
+public class HelloApi {
+
+    private static final Logger LOG = LoggerFactory.getLogger(HelloApi.class);
+
+    @GetMapping("/hello")
+    public String hello(@AuthenticationPrincipal(errorOnInvalidType = true) Object principal) {
+        LOG.info("Principal = {}!", principal);
+
+        return switch (principal) {
+            case User user -> "Hello, " + user.getUsername() + "!";
+            case PublicKeyCredentialUserEntity publicKeyCredentialUserEntity ->
+                    "Hello, " + publicKeyCredentialUserEntity.getName();
+            case Principal principal1 -> "Hello, " + principal1.getName() + "!";
+            case null, default -> "Hello " + principal;
+        };
+    }
+}
+```
+
 
 ## 🔹 Lab 2: Passkeys with a secure local domain (optional lab)
 
 ### 🧰 Lab Prerequisites
 
-- Java 21 or higher
-- A Java IDE (IntelliJ, Eclipse, etc.)
-- Access to a modern web browser (Chrome, Firefox, Safari, etc.)
-- Operating System compatible with Passkeys (macOS, Windows 11) and/or a cross-device secret store like 1Password
+In addition to the previous lab prerequisites, you need the following:
 - A working local domain (e.g., `server.test`) with a valid TLS certificate
 - [mkcert](https://github.com/FiloSottile/mkcert) installed on your machine to create a local CA and trusted certificates
 
@@ -226,8 +295,10 @@ public class WebSecurityConfiguration {
 
 Start the application in your IDE or using the maven spring boot plugin with `./mvnw springboot:run`.
 
-Now navigate your browser to https://server.test:8443. First, you need to log in with the user credentials user/password. Now you should see a welcome page with the following links:
+Now navigate your browser to [https://server.test:8443](https://server.test:8443). First, you need to log in with the user credentials user/password. Now you should see a welcome page with the following links:
 
 - **Register**: Click on this link to register your user for a Passkey (using Keychain on Mac, Browser, 1Password, etc.)
 - **Hello**: This calls a testing API that welcomes you as a user
 - **Log Out**: Force a logout, i.e., to test logging in using a passkey
+
+The remainder of the lab is the same as in Lab 1. You can follow the same steps as in Lab 1 to test the Passkey authentication.
