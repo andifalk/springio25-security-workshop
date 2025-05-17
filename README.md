@@ -10,10 +10,10 @@ More details on the workshop can be found [here](https://2025.springio.net/sessi
 - Java 21 or higher
 - A Java IDE (IntelliJ, Eclipse, etc.)
 - Access to a modern web browser (Chrome, Firefox, Safari, etc.)
-- Operating System compatible with Passkeys (macOS, Windows 11)
+- Operating System compatible with Passkeys (macOS, Windows 11, Linux with Yubikey or 3rd party apps like 1Password)
 
 ## Workshop Labs
 
-- [Passkeys](passkeys/README.md)
-- [Enhancements of Authorization](authorization-enhancements/README.md)
-- [Token Exchange](token-exchange/README.md)
+- [Passkeys](labs/passkeys/README.md)
+- [Enhancements of Authorization](labs/enhanced-authorization/README.md)
+- [Token Exchange](labs/token-exchange/README.md)

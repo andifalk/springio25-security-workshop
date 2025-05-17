@@ -4,6 +4,10 @@
 
 Learn how authentication with Passkeys works and is implemented using Spring Security.
 
+More details on Passkeys can be found in the [passkeys.dev](https://passkeys.dev/) and the [WebAuthn Overview](https://webauthn.guide/). You may also have a look into the specifications of [WebAuthn](https://www.w3.org/TR/webauthn-2/), [Client to Authenticator Protocol (CTAP)](https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html) and [FIDO2](https://fidoalliance.org/fido2/).
+
+Details on implementing for Passkeys can be found in the [Spring Security Reference Documentation](https://docs.spring.io/spring-security/reference/servlet/authentication/passkeys.html).
+
 ## 🧰 Lab Prerequisites
 
 Check if your operating system supports Passkeys. If not, you can use a cross-device secret store like 1Password to register and use Passkeys.

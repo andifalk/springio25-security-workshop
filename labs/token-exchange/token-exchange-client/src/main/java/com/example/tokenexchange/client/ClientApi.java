@@ -31,5 +31,4 @@ public class ClientApi {
 
         return responseSpec.toEntity(String.class).getBody();
     }
-
 }
