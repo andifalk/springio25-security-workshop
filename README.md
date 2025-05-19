@@ -1,6 +1,6 @@
-# Next-Gen Security with Spring Workshop
+## Next-Gen Security with Spring Workshop
 
-## Passkeys, Token Exchange, and Authorization Enhancements [Workshop]
+### Passkeys, Token Exchange, and Authorization Enhancements [Workshop]
 
 Hands-On Workshop at [Spring I/O 2025](https://2025.springio.net/) in Barcelona, Spain.  
 More details on the workshop can be found [here](https://2025.springio.net/sessions/next-gen-security-with-spring-passkeys-token-exchange-and-authorization-enhancements-workshop/).
@@ -9,10 +9,9 @@ More details on the workshop can be found [here](https://2025.springio.net/sessi
 
 ## Prerequisites
 
-- Java 21 or higher
-- A Java IDE (IntelliJ, Eclipse, etc.)
-- Access to a modern web browser (Chrome, Firefox, Safari, etc.)
-- Operating System compatible with Passkeys (macOS, Windows 11, Linux with Yubikey or 3rd party apps like 1Password)
+- **Java Development Kit (JDK)**: Ensure you have JDK 21 or higher installed. You can download the latest version from the [Oracle website](https://www.oracle.com/java/technologies/javase/jdk21-archive-downloads.html) or use a package manager like Homebrew (for macOS) or SDKMAN! (for Linux or macOS).
+- **Java IDE**: You can use any Java IDE of your choice, such as IntelliJ IDEA, Eclipse, or Visual Studio Code. Make sure to install the necessary plugins for Maven support.
+- **Passkeys**: If you want to run the Passkeys demo, you will require a compatible OS and browser. The Passkeys demo is designed and tested to work with macOS and Chrome, but it may also work with other operating systems, browsers and 3rd party apps that support Passkeys (i.e., 1Password).
 
 ## Workshop Labs
 
