@@ -34,7 +34,7 @@ public class BankAccountService {
     }
 
     @PreWriteBankAccount("#toUpdate")
-    BankAccount update(BankAccount toUpdate) {
+    BankAccount update(long id, BankAccount toUpdate) {
         return bankAccountRepository.save(toUpdate);
     }
 }
