@@ -1,6 +1,6 @@
 package org.example.features.domain;
 
-import org.example.features.security.PreWriteBankAccount;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +33,12 @@ public class BankAccountApi {
     }
 
     @PostMapping("/{id}")
-    BankAccount update(@PathVariable("id") long id, @RequestBody BankAccount toUpdate) {
-        return bankAccountService.update(id, toUpdate);
+    ResponseEntity<String> update(@PathVariable("id") long id, @RequestBody BankAccount toUpdate) {
+        boolean updated = bankAccountService.update(id, toUpdate);
+        if (updated) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN.value()).build();
+        }
     }
 }

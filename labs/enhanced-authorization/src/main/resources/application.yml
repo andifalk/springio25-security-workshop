@@ -3,8 +3,10 @@ spring:
     name: authorization-features
   jpa:
     open-in-view: false
+    show-sql: true
   datasource:
     url: jdbc:h2:mem:authorization-features
 logging:
   level:
     org.springframework.security: debug
+    org.hibernate.orm.jdbc.bind: trace
