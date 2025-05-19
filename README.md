@@ -5,6 +5,8 @@
 Hands-On Workshop at [Spring I/O 2025](https://2025.springio.net/) in Barcelona, Spain.  
 More details on the workshop can be found [here](https://2025.springio.net/sessions/next-gen-security-with-spring-passkeys-token-exchange-and-authorization-enhancements-workshop/).
 
+![Spring IO 2025 Workshop](docs/image/promo_image.png "Spring IO 2025 Workshop")
+
 ## Prerequisites
 
 - Java 21 or higher

@@ -445,3 +445,249 @@ Start the Token Exchange Resource Server by running the `TokenExchangeResourceSe
 
 The Token Exchange Resource Server will be available at [http://localhost:9091/api/messages](http://localhost:9091/api/messages). You can check if the token exchange resource server is running by opening the following URL in your browser: [http://localhost:9091/api/messages](http://localhost:9091/api/messages). Expect a 401 Unauthorized error, as the token exchange resource server is configured to require a valid JWT token for access.
 
+#### Try the complete flow
+
+As we started all the applications, we can now try the complete flow.
+
+1. Open your browser and navigate to [http://localhost:8080/api/hello](http://localhost:8080/api/hello).
+2. You will be redirected to the login page of the authorization server.
+3. Log in with the user credentials `user/password`.
+4. You will be redirected back to the client application and see a greeting message, but it will not show the message from the target resource server. That is because it just uses the token from the client application to call the target resource server.
+
+### Step 6: Configure and Perform the Token Exchange
+
+The token exchange resource server must be configured to perform the token exchange with the authorization server and call the target resource server with the exchanged token.
+
+#### Enable the Token Exchange capability
+
+First, we need to add the Spring Security components required to perform the token exchange. This is done in the `WebSecurityConfiguration` class:
+
+```java
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.TokenExchangeOAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.RestClientTokenExchangeTokenResponseClient;
+import org.springframework.security.oauth2.client.endpoint.TokenExchangeGrantRequest;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.client.RestClient;
+
+@EnableWebSecurity
+@Configuration
+public class WebSecurityConfiguration {
+
+    // previous bean definitions...
+
+    @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+            ClientRegistrationRepository clientRegistrationRepository,
+            OAuth2AuthorizedClientRepository authorizedClientRepository) {
+
+        TokenExchangeOAuth2AuthorizedClientProvider tokenExchangeAuthorizedClientProvider =
+                new TokenExchangeOAuth2AuthorizedClientProvider();
+
+        OAuth2AuthorizedClientProvider authorizedClientProvider =
+                OAuth2AuthorizedClientProviderBuilder.builder()
+                        .provider(tokenExchangeAuthorizedClientProvider)
+                        .build();
+
+        DefaultOAuth2AuthorizedClientManager authorizedClientManager =
+                new DefaultOAuth2AuthorizedClientManager(
+                        clientRegistrationRepository, authorizedClientRepository);
+        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+
+        return authorizedClientManager;
+    }
+
+    @Bean
+    public OAuth2AccessTokenResponseClient<TokenExchangeGrantRequest> accessTokenResponseClient() {
+        return new RestClientTokenExchangeTokenResponseClient();
+    }
+
+    // further bean definitions...
+}
+```
+
+🔧 Purpose of the `OAuth2AuthorizedClientManager` Bean
+
+`OAuth2AuthorizedClientManager` is used to manage OAuth 2.0 clients, typically to:
+- Automatically acquire or refresh tokens,
+- Perform token exchanges,
+- Handle the persistence of authorized clients.
+
+🔍 What This Specific Code Does
+
+Creates a provider that knows how to perform OAuth 2.0 Token Exchange:
+```java
+TokenExchangeOAuth2AuthorizedClientProvider tokenExchangeAuthorizedClientProvider =
+        new TokenExchangeOAuth2AuthorizedClientProvider();
+```
+
+Builds an `OAuth2AuthorizedClientProvider` with only token exchange capabilities.
+You could also include other providers here (e.g., refresh_token, client_credentials, etc.) if needed:
+```java
+OAuth2AuthorizedClientProvider authorizedClientProvider =
+        OAuth2AuthorizedClientProviderBuilder.builder()
+                .provider(tokenExchangeAuthorizedClientProvider)
+                .build();
+```
+
+The next lines create a `DefaultOAuth2AuthorizedClientManager` that uses:
+- `ClientRegistrationRepository` to look up client configurations (client-id, client-secret, scopes, etc.)
+- `OAuth2AuthorizedClientRepository` to store/retrieve authorized clients (e.g., from the session or request context).
+
+```java
+DefaultOAuth2AuthorizedClientManager authorizedClientManager =
+        new DefaultOAuth2AuthorizedClientManager(
+                clientRegistrationRepository, authorizedClientRepository);
+```
+
+The final line configures the manager to use the custom provider, which supports token exchange.
+
+```java
+authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+```
+
+🔧 Purpose of the `OAuth2AccessTokenResponseClient` Bean
+
+This tells Spring Security how to handle the token exchange request and response. The `RestClientTokenExchangeTokenResponseClient` is a built-in implementation that uses a REST client to perform the token exchange.
+
+```java
+@Bean
+public OAuth2AccessTokenResponseClient<TokenExchangeGrantRequest> accessTokenResponseClient() {
+    return new RestClientTokenExchangeTokenResponseClient();
+}
+```
+
+#### Extend the Rest API endpoint to perform the Token Exchange
+
+The final step is to extend the existing API endpoint `/api/message` to perform the token exchange with the authorization server and successfully call the target resource server with the exchanged token.
+
+To achieve this, we need to change the `ClientApi` class to use the `OAuth2AuthorizedClientManager` to perform the token exchange and call the target resource server with the exchanged token.
+
+```java
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClient;
+
+@RestController
+@RequestMapping("/api/messages")
+public class MessageApi {
+    private static final Logger LOG = LoggerFactory.getLogger(MessageApi.class);
+    private static final String TARGET_RESOURCE_SERVER_URL = "http://localhost:9092/api/messages";
+    private final OAuth2AuthorizedClientManager authorizedClientManager;
+    private final RestClient restClient;
+
+    public MessageApi(OAuth2AuthorizedClientManager authorizedClientManager, RestClient restClient) {
+        this.authorizedClientManager = authorizedClientManager;
+        this.restClient = restClient;
+    }
+
+    @GetMapping
+    public String message(JwtAuthenticationToken jwtAuthentication) {
+        LOG.info("Called the token exchange resource server with token subject {} and audience {}",
+                jwtAuthentication.getToken().getSubject(),
+                jwtAuthentication.getToken().getAudience());
+
+        LOG.info("Performing token exchange to call the target resource server...");
+
+        // Create an OAuth2AuthorizeRequest with the client registration (see application.yml) to use to perform the token exchange
+        OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest.withClientRegistrationId("messaging-client-token-exchange")
+                .principal(jwtAuthentication)
+                .build();
+        
+        // Use the previously configured authorizedClientManager to perform the token exchange
+        OAuth2AuthorizedClient authorizedClient = this.authorizedClientManager.authorize(authorizeRequest);
+        LOG.info("Performed token exchange");
+
+        assert authorizedClient != null;
+        
+        OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+        if (accessToken == null) {
+            LOG.warn("No access token");
+            return "I am a message from the token exchange resource server";
+        }
+        LOG.info("Call target resource server with exchanged token...");
+        RestClient.ResponseSpec responseSpec = restClient.get().uri(TARGET_RESOURCE_SERVER_URL)
+                .headers(headers -> headers.setBearerAuth(accessToken.getTokenValue()))
+                .retrieve();
+        ResponseEntity<String> responseEntity = responseSpec.toEntity(String.class);
+        LOG.info("Successfully called the target resource server with exchanged token");
+        return "I am a message from the token exchange resource server with " + responseEntity.getBody();
+    }
+}
+```
+
+🔍 Breakdown of What this Method Does
+
+| Purpose                    | Description                                                |
+|----------------------------|------------------------------------------------------------|
+| 🔒 Accept secured requests | Accepts incoming requests with a JWT token                 |
+| 🔁 Perform token exchange  | Uses the incoming token to obtain a new access token       |
+| 📞 Call downstream service | Calls another resource server with the new token           |
+| 📦 Aggregate response      | Returns a message containing data from the target resource |
+
+It receives an authenticated user (JwtAuthenticationToken) representing a valid JWT-based access token that was used to call this resource server.
+```java
+public String message(JwtAuthenticationToken jwtAuthentication) {
+    //...
+}
+```
+
+It creates an `OAuth2AuthorizeRequest` object that specifies the client registration ID (from application.yml) and the principal (the authenticated user). Finally, it triggers token exchange using the OAuth2AuthorizedClientManager and the jwtAuthentication token as the subject token.
+```java
+OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
+        .withClientRegistrationId("messaging-client-token-exchange")
+        .principal(jwtAuthentication)
+        .build();
+
+OAuth2AuthorizedClient authorizedClient = this.authorizedClientManager.authorize(authorizeRequest);
+```
+
+Ensures the token exchange worked and an access token was received.
+```java
+assert authorizedClient != null;
+OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+```
+
+Now it uses the exchanged token and passes it as a bearer token to make a request to the target resource server.
+```java
+RestClient.ResponseSpec responseSpec = restClient.get().uri(TARGET_RESOURCE_SERVER_URL)
+        .headers(headers -> headers.setBearerAuth(accessToken.getTokenValue()))
+        .retrieve();
+ResponseEntity<String> responseEntity = responseSpec.toEntity(String.class);
+```
+
+#### Restart the Token Exchange Resource Server
+
+Now that we have implemented the token exchange, we need to restart the token exchange resource server to apply the changes.
+
+```bash
+./mvnw spring-boot:run
+```
+
+After it successfully has restarted, retry the complete flow by navigating to [http://localhost:8080/api/hello](http://localhost:8080/api/hello) in your browser. This time the complete flow should work successfully, and you should see a message from the target resource server.
+
+---
+
+✅ **Congratulations:** You have implemented a complete OAuth2 Token Exchange flow using Spring Security and Spring Authorization Server. You have learned how to configure the authorization server, the client application, the token exchange resource server, and the target resource server. You have also learned how to perform the token exchange and call the target resource server with the exchanged token.
