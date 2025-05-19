@@ -48,5 +48,7 @@ Content-Type: application/json
   "balance": 1500.0
 }
 
-###
+### Should be 200 (OK), everybody can access this endpoint
 GET http://localhost:8080/v3/api-docs
+
+###

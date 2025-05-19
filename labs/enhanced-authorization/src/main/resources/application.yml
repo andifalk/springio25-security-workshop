@@ -6,7 +6,12 @@ spring:
     show-sql: true
   datasource:
     url: jdbc:h2:mem:authorization-features
+
 logging:
   level:
     org.springframework.security: debug
     org.hibernate.orm.jdbc.bind: trace
+
+server:
+  error:
+    include-stacktrace: never
