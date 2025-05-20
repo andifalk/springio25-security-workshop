@@ -13,6 +13,10 @@ More details on the workshop can be found [here](https://2025.springio.net/sessi
 - **Java IDE**: You can use any Java IDE of your choice, such as IntelliJ IDEA, Eclipse, or Visual Studio Code. Make sure to install the necessary plugins for Maven support.
 - **Passkeys**: If you want to run the Passkeys demo, you will require a compatible OS and browser. The Passkeys demo is designed and tested to work with macOS and Chrome, but it may also work with other operating systems, browsers and 3rd party apps that support Passkeys (i.e., 1Password).
 
+## Workshop Tutorial
+
+To follow along with the workshop, you can clone this repository and then follow the step-by-step instructions in the corresponding [workshop tutorial](https://andifalk.gitbook.io/spring-io-2025-security-workshop).
+
 ## Workshop Labs
 
 - [Passkeys](labs/passkeys/README.md)
