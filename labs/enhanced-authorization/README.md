@@ -379,9 +379,7 @@ public @interface PreWriteBankAccount {
 Let us add these annotations to the `BankAccountService` class:
 
 ```java
-import org.example.features.security.PostReadBankAccount;
-import org.example.features.security.PreGetBankAccounts;
-import org.example.features.security.PreWriteBankAccount;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -391,32 +389,29 @@ import java.util.List;
 @Service
 public class BankAccountService {
 
-   private final BankAccountRepository bankAccountRepository;
+    private final BankAccountRepository bankAccountRepository;
 
-   public BankAccountService(BankAccountRepository bankAccountRepository) {
-      this.bankAccountRepository = bankAccountRepository;
-   }
+    public BankAccountService(BankAccountRepository bankAccountRepository) {
+        this.bankAccountRepository = bankAccountRepository;
+    }
 
-   @PreGetBankAccounts(role = "ADMIN")
-   List<BankAccount> findAll() {
-      return bankAccountRepository.findAll();
-   }
+    List<BankAccount> findAll() {
+        return bankAccountRepository.findAll();
+    }
 
-   BankAccount findById(long id) {
-      return bankAccountRepository.findById(id).orElse(null);
-   }
+    BankAccount findById(long id) {
+        return bankAccountRepository.findById(id).orElse(null);
+    }
 
-   @PreWriteBankAccount("#toSave")
-   @Transactional
-   BankAccount save(BankAccount toSave) {
-      return bankAccountRepository.save(toSave);
-   }
+    @Transactional
+    BankAccount save(BankAccount toSave) {
+        return bankAccountRepository.save(toSave);
+    }
 
-   @PreWriteBankAccount("#toUpdate")
-   @Transactional
-   boolean update(long id, BankAccount toUpdate) {
-      return bankAccountRepository.updateBankAccount(id, toUpdate.getBalance()) == 1;
-   }
+    @Transactional
+    boolean update(long id, BankAccount toUpdate) {
+        return bankAccountRepository.updateBankAccount(id, toUpdate.getBalance()) == 1;
+    }
 }
 ```
 
@@ -453,7 +448,6 @@ Here is what the `BankAccount` entity class looks like after adding the `@PreAut
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.Entity;
-import org.example.features.security.MaskMethodAuthorizationDeniedHandler;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
@@ -521,9 +515,7 @@ public @interface PostReadBankAccount {
 We also need to add this annotation to the `findById` method in the `BankAccountService` class:
 
 ```java
-import org.example.features.security.PostReadBankAccount;
-import org.example.features.security.PreGetBankAccounts;
-import org.example.features.security.PreWriteBankAccount;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -539,23 +531,19 @@ public class BankAccountService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
-    @PreGetBankAccounts(role = "ADMIN")
     List<BankAccount> findAll() {
         return bankAccountRepository.findAll();
     }
 
-    @PostReadBankAccount
     BankAccount findById(long id) {
         return bankAccountRepository.findById(id).orElse(null);
     }
 
-    @PreWriteBankAccount("#toSave")
     @Transactional
     BankAccount save(BankAccount toSave) {
         return bankAccountRepository.save(toSave);
     }
 
-    @PreWriteBankAccount("#toUpdate")
     @Transactional
     boolean update(long id, BankAccount toUpdate) {
         return bankAccountRepository.updateBankAccount(id, toUpdate.getBalance()) == 1;
