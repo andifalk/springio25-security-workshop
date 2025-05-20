@@ -62,6 +62,11 @@ public class BankAccount extends AbstractPersistable<Long> {
 The application uses a simple in-memory database (H2) to store the bank accounts.
 The `BankAccount` entity class extends the `AbstractPersistable` class, which provides a simple way to manage the entity's ID and version.
 
+**Note, if Spring Security 6.3 is used:**
+As we will use Jackson (for JSON), we need to set the annotation `@JsonSerialize(as = BankAccount.class)` on top of the class. This is due to how Jackson works with CGLIB proxies (Spring Security needs proxies to make enhanced authorizations work).
+Otherwise, this may result in a serialization error like the following:
+`com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Direct self-reference leading to cycle`
+
 The application provides a simple REST API that allows users to create, view and update their bank accounts.
 
 | Endpoint                | Description                                           |
@@ -192,6 +197,27 @@ And it also requires a special dependency in the `pom.xml`:
 </dependency>
 ```
 
+Let's start the application (`./mvnw spring-boot:run`) and test the API with the following credentials:
+
+| Username   | Password | Role(s)          |
+|------------|----------|------------------|
+| user       | secret   | USER             |
+| admin      | secret   | USER, ADMIN      |
+| accountant | secret   | USER, ACCOUNTANT |
+
+To test the application, you can use one of the provided HTTP client files in the `requests` folder of the module:
+
+- `api-call.http`: The IntelliJ Http client
+- `api-call.httpie`: The command line [Httpie](https://httpie.io/) client
+- `api-call.curl`: The command line [Curl](https://curl.se/) client
+
+What do you think about the responses of the different API calls?  
+It looks like there are issues with the authorization of the API calls. So there is work to do!
+
+But first let's have a look at the (new and enhanced) method authorization features in Spring Security.
+
+---
+
 ### Step 2: Get to know the new and enhanced method Authorization Features
 
 An application can use Spring Security to secure the REST API and restrict access to the method (service) layer.
@@ -304,7 +330,195 @@ In the next step we will now implement the new and enhanced method authorization
 
 ### Step 3: Add the new and enhanced Authorization Features to the application
 
+Now it is the time to add the missing authorization to the application.
 
+#### Spring Security Annotation Parameters
+
+At first let's create some custom Authorization annotations to show the [Annotations Parameters](https://docs.spring.io/spring-security/reference/6.3/whats-new.html#_annotation_parameters_14480) feature introduced in Spring Security 6.3. Later we will add these to the `BankAccountService` class.
+
+The `PreGetBankAccounts` and `PreWriteBankAccount` annotations are custom security annotations that are used to restrict access to the methods based on the user's role and ownership of the bank account. Please create these two classes in the `security` package.
+
+**PreGetBankAccounts:**
+
+```java
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@PreAuthorize("hasRole('{role}')")
+public @interface PreGetBankAccounts {
+   @AliasFor(attribute = "value") 
+   String role();
+}
+```
+
+**PreWriteBankAccount:**
+
+```java
+import org.springframework.core.annotation.AliasFor;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Retention(RetentionPolicy.RUNTIME)
+@PreAuthorize("{account}?.owner == authentication?.name")
+public @interface PreWriteBankAccount {
+   String value() default "#account";
+
+   @AliasFor(attribute = "value")
+   String account() default "#account";
+}
+```
+
+Let us add these annotations to the `BankAccountService` class:
+
+```java
+import org.example.features.security.PostReadBankAccount;
+import org.example.features.security.PreGetBankAccounts;
+import org.example.features.security.PreWriteBankAccount;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Transactional(readOnly = true)
+@Service
+public class BankAccountService {
+
+   private final BankAccountRepository bankAccountRepository;
+
+   public BankAccountService(BankAccountRepository bankAccountRepository) {
+      this.bankAccountRepository = bankAccountRepository;
+   }
+
+   @PreGetBankAccounts(role = "ADMIN")
+   List<BankAccount> findAll() {
+      return bankAccountRepository.findAll();
+   }
+
+   BankAccount findById(long id) {
+      return bankAccountRepository.findById(id).orElse(null);
+   }
+
+   @PreWriteBankAccount("#toSave")
+   @Transactional
+   BankAccount save(BankAccount toSave) {
+      return bankAccountRepository.save(toSave);
+   }
+
+   @PreWriteBankAccount("#toUpdate")
+   @Transactional
+   boolean update(long id, BankAccount toUpdate) {
+      return bankAccountRepository.updateBankAccount(id, toUpdate.getBalance()) == 1;
+   }
+}
+```
+
+✅ Explanation:
+- **@PreGetBankAccounts(role = "ADMIN")** is a custom-composed parameterized annotation built on top of @PreAuthorize
+- When `findAll()` is called, Spring Security will:
+  1. Resolve the annotation parameter role = "ADMIN"
+  2. Evaluate the SpEL expression hasRole() → becomes hasRole('ADMIN')
+  3. Check if the currently authenticated user has the authority ROLE_ADMIN
+  4. If the check passes, proceed to call findAll()
+  5. Otherwise, throw an AccessDeniedException
+- **@PreWriteBankAccount** is a custom-composed parameterized annotation built on top of @PreAuthorize
+  1. Spring sees @PreWriteBankAccount("#toSave")
+  2. The expression #toSave is passed to the account attribute of the annotation
+  3. Inside the annotation, {account} is replaced with #toSave
+  4. The resulting @PreAuthorize becomes:
+     `@PreAuthorize("#toSave?.owner == authentication?.name")`
+  5. At runtime, before executing `save()`, Spring evaluates whether: `toSave.owner == currentlyAuthenticatedUser.name`
+
+Restart the application and test the API again (with the previously introduced credentials above)
+
+Now most Authorizations should now work as expected.
+
+#### Secure Return Values and Authorization Error Handling
+
+Since Spring Security 6.3+ also supports wrapping any object that is annotated its method security annotations. The simplest way to achieve this is to mark any method that returns the object you wish to authorize with the `@AuthorizeReturnObject` annotation.
+
+The `@AuthorizeReturnObject` annotation instructs Spring Security to check the returned object against the security expression. This is a new feature introduced in Spring Security 6.3 as well and allows you to restrict access to the returned domain object based on the user's role and the returned object's properties.
+
+We want to try this now on our domain entity.
+Here is what the `BankAccount` entity class looks like after adding the `@PreAuthorize` and `@HandleAuthorizationDenied` annotation:
+
+```java
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.persistence.Entity;
+import org.example.features.security.MaskMethodAuthorizationDeniedHandler;
+import org.springframework.data.jpa.domain.AbstractPersistable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authorization.method.HandleAuthorizationDenied;
+
+import java.math.BigDecimal;
+import java.util.Objects;
+
+@JsonSerialize(as = BankAccount.class)
+@Entity
+public class BankAccount extends AbstractPersistable<Long> {
+    private String owner;
+    private String accountNumber;
+    private BigDecimal balance;
+
+    // previous code omitted
+
+    @PreAuthorize("this.owner == authentication?.name")
+    @HandleAuthorizationDenied(handlerClass = MaskMethodAuthorizationDeniedHandler.class)
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    // further code omitted
+}
+```
+
+`@HandleAuthorizationDenied` references the `MaskMethodAuthorizationDeniedHandler` class, which is a custom authorization-denied handler that is used to mask the account number if the user is not authorized to access it.
+
+Let's see how this is defined in a new class called `MaskMethodAuthorizationDeniedHandler`, create this in the `security` package:
+
+```java
+import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.security.authorization.AuthorizationResult;
+import org.springframework.security.authorization.method.MethodAuthorizationDeniedHandler;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MaskMethodAuthorizationDeniedHandler implements MethodAuthorizationDeniedHandler {
+    @Override
+    public Object handleDeniedInvocation(MethodInvocation methodInvocation, AuthorizationResult authorizationResult) {
+        return "*****";
+    }
+}
+```
+
+Finally, we need to activate the validation of authorization checks on our domain object.
+We achieve this by adding another customized annotation.
+
+The `PostReadBankAccount` annotation is a custom security annotation that is used to restrict access to the method based on the user's role and the returned object. Create a new class called `PostReadBankAccount` in the `security` package:
+
+```java
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.authorization.method.AuthorizeReturnObject;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+@Retention(RetentionPolicy.RUNTIME)
+@PostAuthorize("returnObject?.owner == authentication?.name or hasRole('ACCOUNTANT')")
+@AuthorizeReturnObject
+public @interface PostReadBankAccount {
+}
+```
+
+We also need to add this annotation to the `findById` method in the `BankAccountService` class:
 
 ```java
 import org.example.features.security.PostReadBankAccount;
@@ -349,116 +563,14 @@ public class BankAccountService {
 }
 ```
 
-The `PreGetBankAccounts` and `PreWriteBankAccount` annotations are custom security annotations that are used to restrict access to the methods based on the user's role. These are examples of the new parameterized security annotations that are introduced in Spring Security 6.3.
+### Step 4: Start the application and test the API
 
-```java
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-@PreAuthorize("hasRole('{role}')")
-public @interface PreGetBankAccounts {
-    String role();
-}
-```
-
-```java
-import org.springframework.core.annotation.AliasFor;
-import org.springframework.security.access.prepost.PreAuthorize;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Retention(RetentionPolicy.RUNTIME)
-@PreAuthorize("{account}?.owner == authentication?.name")
-public @interface PreWriteBankAccount {
-    String value() default "#account";
-
-    @AliasFor(attribute = "value")
-    String account() default "#account";
-}
-```
-
-
-The `PostReadBankAccount` annotation is a custom security annotation that is used to restrict access to the method based on the user's role and the returned object. This is an example of the new `@AuthorizeReturnObject` annotation that is introduced in Spring Security 6.3.
-
-```java
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.authorization.method.AuthorizeReturnObject;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Retention(RetentionPolicy.RUNTIME)
-@PostAuthorize("returnObject?.owner == authentication?.name or hasRole('ACCOUNTANT')")
-@AuthorizeReturnObject
-public @interface PostReadBankAccount {
-}
-```
-
-The `@AuthorizeReturnObject` annotation instructs Spring Security to check the returned object against the security expression. This is a new feature that is introduced in Spring Security 6.3 and allows you to restrict access to the returned object based on the user's role and the returned object's properties.
-
-```java
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import jakarta.persistence.Entity;
-import org.example.features.security.MaskMethodAuthorizationDeniedHandler;
-import org.springframework.data.jpa.domain.AbstractPersistable;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authorization.method.HandleAuthorizationDenied;
-
-import java.math.BigDecimal;
-import java.util.Objects;
-
-@JsonSerialize(as = BankAccount.class)
-@Entity
-public class BankAccount extends AbstractPersistable<Long> {
-    private String owner;
-    private String accountNumber;
-    private BigDecimal balance;
-
-    // previous code omitted
-
-    @PreAuthorize("this.owner == authentication?.name")
-    @HandleAuthorizationDenied(handlerClass = MaskMethodAuthorizationDeniedHandler.class)
-    public String getAccountNumber() {
-        return accountNumber;
-    }
-
-    // further code omitted
-}
-```
-
-Notice the `@HandleAuthorizationDenied` annotation on the `getAccountNumber()` method. This is a new feature that is introduced in Spring Security 6.3 as well and allows you to handle authorization denied exceptions in a more flexible way. The `MaskMethodAuthorizationDeniedHandler` is a custom authorization denied handler used to mask the account number if the user is not authorized to access it.
-
-```java
-import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.security.authorization.AuthorizationResult;
-import org.springframework.security.authorization.method.MethodAuthorizationDeniedHandler;
-import org.springframework.stereotype.Component;
-
-@Component
-public class MaskMethodAuthorizationDeniedHandler implements MethodAuthorizationDeniedHandler {
-    @Override
-    public Object handleDeniedInvocation(MethodInvocation methodInvocation, AuthorizationResult authorizationResult) {
-        return "*****";
-    }
-}
-```
-
-### Step 3: Start the application and test the API
-
-1. Start the application by running the `BankAccountApplication` class.
+1. Restart the application by running the `BankAccountApplication` class.
    - You can do this by right-clicking on the class and selecting **Run** or by using the command line:
    ```bash
    ./mvnw spring-boot:run
    ```
 
-2. Use your preferred HTTP client to test the API.
-    - You can use the provided HTTP client files in the `requests` folder of the module to test the API.
-    - You can also use the command line to test the API using `curl` or `httpie`.
+2. Re-test the API.
+    - All authorizations should work now as expected.
+    - If the user has restricted access rights, the account number is being masked out.

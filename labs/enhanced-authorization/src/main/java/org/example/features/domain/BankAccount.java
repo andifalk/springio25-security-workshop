@@ -3,10 +3,7 @@ package org.example.features.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.Entity;
-import org.example.features.security.MaskMethodAuthorizationDeniedHandler;
 import org.springframework.data.jpa.domain.AbstractPersistable;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -31,8 +28,6 @@ public class BankAccount extends AbstractPersistable<Long> {
         return owner;
     }
 
-    @PreAuthorize("this.owner == authentication?.name")
-    @HandleAuthorizationDenied(handlerClass = MaskMethodAuthorizationDeniedHandler.class)
     public String getAccountNumber() {
         return accountNumber;
     }
