@@ -227,7 +227,7 @@ public class HelloApi {
 
 ✅ That's it! You have successfully implemented Passkeys authentication in your Spring Boot application. 
 
->💡 **Note**: The optional lab 2 shows how to implement Passkeys with a secure local domain. This lab is intended to be done as *home work*. Instead, we will proceed with the next topic **Enhanced Authorization**.
+>💡 **Note**: The optional lab 2 shows how to implement Passkeys with a secure local domain. This lab is intended to be done as *homework*. Instead, we will proceed with the next topic **Enhanced Authorization**.
 
 ---
 

@@ -79,6 +79,12 @@ The application provides a simple REST API that allows users to create, view and
 Here is the code for the REST API:
 
 ```java
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/accounts")
 public class BankAccountApi {

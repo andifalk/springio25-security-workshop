@@ -698,4 +698,4 @@ After it successfully has restarted, retry the complete flow by navigating to [h
 2. Enhanced Authorization (i.e., authorize domain objects)
 3. OAuth2 Token Exchange
 
-If you have any questions or feedback, please feel free to reach out to me (via LinkedIn). I hope you enjoyed the workshop and learned something new!
+If you have any questions or feedback, please feel free to reach out to me (just connect via [LinkedIn](https://www.linkedin.com/in/andifalk/)). I hope you enjoyed the workshop and learned something new!
