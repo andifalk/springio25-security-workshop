@@ -191,14 +191,15 @@ If you want to use another passkey or another device, you can select the Passkey
 You will then be prompted to select the Passkey you want to use.
 ![Select Authenticator](image/authenticator_selection.png "Select Authenticator")
 
-4. **Hello API**: After logging in with the Passkey, you will be redirected to the welcome page. Click on the **Call Hello API** link to call the testing API that welcomes you as a user.
-
 If you have used your phone or another device to register the Passkey, you will be prompted to use that device to log in. This is the cross-device feature of Passkeys.
 
 ![Phone Authenticator](image/phone_authenticator.png "Phone Authenticator")
 
+##### 4.Call Hello API
 
-> 💡 **Note**: Look inside the `src/main/java/com/example/passkeys/HelloApi.java` class to see how the `Principle` differs depending on the Authentication mechanism. 
+After logging in with the Passkey, you will be redirected to the welcome page. Click on the **Call Hello API** link to call the testing API that welcomes you as a user.
+
+Look inside the `src/main/java/com/example/passkeys/HelloApi.java` class to see how the `Principle` differs depending on the Authentication mechanism. 
 
 ```java
 @RestController
