@@ -355,7 +355,6 @@ The `PreGetBankAccounts` and `PreWriteBankAccount` annotations are custom securi
 **PreGetBankAccounts:**
 
 ```java
-import org.springframework.core.annotation.AliasFor;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.lang.annotation.ElementType;
@@ -367,7 +366,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @PreAuthorize("hasRole('{role}')")
 public @interface PreGetBankAccounts {
-   @AliasFor(attribute = "value") 
    String role();
 }
 ```
@@ -456,46 +454,8 @@ Now most Authorizations should now work as expected.
 
 #### Secure Return Values and Authorization Error Handling
 
-Since Spring Security 6.3+ also supports wrapping any object that is annotated its method security annotations. The simplest way to achieve this is to mark any method that returns the object you wish to authorize with the `@AuthorizeReturnObject` annotation.
-
-The `@AuthorizeReturnObject` annotation instructs Spring Security to check the returned object against the security expression. This is a new feature introduced in Spring Security 6.3 as well and allows you to restrict access to the returned domain object based on the user's role and the returned object's properties.
-
-We want to try this now on our domain entity.
-Here is what the `BankAccount` entity class looks like after adding the `@PreAuthorize` and `@HandleAuthorizationDenied` annotation:
-
-```java
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import jakarta.persistence.Entity;
-import org.springframework.data.jpa.domain.AbstractPersistable;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authorization.method.HandleAuthorizationDenied;
-
-import java.math.BigDecimal;
-import java.util.Objects;
-
-@JsonSerialize(as = BankAccount.class)
-@Entity
-public class BankAccount extends AbstractPersistable<Long> {
-    private String owner;
-    private String accountNumber;
-    private BigDecimal balance;
-
-    // previous code omitted
-
-    @PreAuthorize("this.owner == authentication?.name")
-    @HandleAuthorizationDenied(handlerClass = MaskMethodAuthorizationDeniedHandler.class)
-    public String getAccountNumber() {
-        return accountNumber;
-    }
-
-    // further code omitted
-}
-```
-
-`@HandleAuthorizationDenied` references the `MaskMethodAuthorizationDeniedHandler` class, which is a custom authorization-denied handler that is used to mask the account number if the user is not authorized to access it.
-
-Let's see how this is defined in a new class called `MaskMethodAuthorizationDeniedHandler`, create this in the `security` package:
+Since Spring Security 6.3+ it's also supported to implement a handler to customize authorization errors.
+Let's see how this works by defining a new class called `MaskMethodAuthorizationDeniedHandler`, create this in the `security` package:
 
 ```java
 import org.aopalliance.intercept.MethodInvocation;
@@ -511,6 +471,90 @@ public class MaskMethodAuthorizationDeniedHandler implements MethodAuthorization
     }
 }
 ```
+This class implements the `MethodAuthorizationDeniedHandler` interface and provides a custom implementation for handling authorization failures. In this case, it simply returns a masked value (*****). We will later add this to the `BankAccount` entity class.
+
+Since Spring Security 6.3+ also supports wrapping any object that is annotated its method security annotations. The simplest way to achieve this is to mark any method that returns the object you wish to authorize with the `@AuthorizeReturnObject` annotation.
+
+The `@AuthorizeReturnObject` annotation instructs Spring Security to check the returned object against the security expression. This is a new feature introduced in Spring Security 6.3 as well and allows you to restrict access to the returned domain object based on the user's role and the returned object's properties.
+
+We want to try this now on our domain entity.
+Here is what the `BankAccount` entity class looks like after adding the `@PreAuthorize` and `@HandleAuthorizationDenied` annotation:
+
+```java
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.persistence.Entity;
+
+import org.example.features.security.MaskMethodAuthorizationDeniedHandler;
+import org.springframework.data.jpa.domain.AbstractPersistable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authorization.method.HandleAuthorizationDenied;
+
+import java.math.BigDecimal;
+import java.util.Objects;
+
+@JsonSerialize(as = BankAccount.class)
+@Entity
+public class BankAccount extends AbstractPersistable<Long> {
+    private String owner;
+    private String accountNumber;
+    private BigDecimal balance;
+
+    public BankAccount() {
+    }
+
+    public BankAccount(long id, String owner, String accountNumber, BigDecimal balance) {
+        this.owner = owner;
+        this.accountNumber = accountNumber;
+        this.balance = balance;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    @PreAuthorize("this.owner == authentication?.name")
+    @HandleAuthorizationDenied(handlerClass = MaskMethodAuthorizationDeniedHandler.class)
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return super.isNew();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        BankAccount that = (BankAccount) o;
+        return Objects.equals(owner, that.owner) && Objects.equals(accountNumber, that.accountNumber) && Objects.equals(balance, that.balance);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), owner, accountNumber, balance);
+    }
+
+    @Override
+    public String toString() {
+        return "BankAccount{" +
+                "owner='" + owner + '\'' +
+                ", accountNumber='" + accountNumber + '\'' +
+                ", balance=" + balance +
+                '}';
+    }
+}
+```
+
+`@HandleAuthorizationDenied` now also references the previously created `MaskMethodAuthorizationDeniedHandler` class, which is a custom authorization-denied handler that is used to mask the account number if the user is not authorized to access it.
 
 Finally, we need to activate the validation of authorization checks on our domain object.
 We achieve this by adding another customized annotation.
