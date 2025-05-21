@@ -181,7 +181,9 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
 }
 ```
 
-Please notice the method having `@Modifying` annotation on the `updateBankAccount` method. It also contains a custom query that updates the balance of a bank account only if the owner of the account matches the currently authenticated user. This is an example of how to use Spring Security to restrict access to data based on the user's role. This is basically done by using the `?#{principal?.username}` expression in the query. This is enabled through the Spring Data Security extension defined in class `WebSecurityConfiguration`.
+Please notice the `updateBankAccount` method. It contains a custom query that updates the balance of a bank account only if the owner of the account matches the currently authenticated user.  
+This is an example of how to use Spring Security to restrict access to data based on the user's role. This is basically done by using the `?#{principal?.username}` expression in the query.  
+This is enabled through the Spring Data Security extension defined in class `WebSecurityConfiguration`.
 
 ```java
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
@@ -194,7 +196,7 @@ public SecurityEvaluationContextExtension securityEvaluationContextExtension() {
 }
 ```
 
-And it also requires a special dependency in the `pom.xml`:
+And it also requires an additional dependency in the `pom.xml` that is already included in the provided application:
 
 ```xml
 <dependency>
@@ -353,6 +355,7 @@ The `PreGetBankAccounts` and `PreWriteBankAccount` annotations are custom securi
 **PreGetBankAccounts:**
 
 ```java
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.lang.annotation.ElementType;
@@ -391,7 +394,8 @@ public @interface PreWriteBankAccount {
 Let us add these annotations to the `BankAccountService` class:
 
 ```java
-
+import org.example.features.security.PreGetBankAccounts;
+import org.example.features.security.PreWriteBankAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -407,6 +411,7 @@ public class BankAccountService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
+    @PreGetBankAccounts(role = "ADMIN")
     List<BankAccount> findAll() {
         return bankAccountRepository.findAll();
     }
@@ -415,11 +420,13 @@ public class BankAccountService {
         return bankAccountRepository.findById(id).orElse(null);
     }
 
+    @PreWriteBankAccount("#toSave")
     @Transactional
     BankAccount save(BankAccount toSave) {
         return bankAccountRepository.save(toSave);
     }
 
+    @PreWriteBankAccount("#toUpdate")
     @Transactional
     boolean update(long id, BankAccount toUpdate) {
         return bankAccountRepository.updateBankAccount(id, toUpdate.getBalance()) == 1;
@@ -527,7 +534,9 @@ public @interface PostReadBankAccount {
 We also need to add this annotation to the `findById` method in the `BankAccountService` class:
 
 ```java
-
+import org.example.features.security.PostReadBankAccount;
+import org.example.features.security.PreGetBankAccounts;
+import org.example.features.security.PreWriteBankAccount;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -543,19 +552,23 @@ public class BankAccountService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
+    @PreGetBankAccounts(role = "ADMIN")
     List<BankAccount> findAll() {
         return bankAccountRepository.findAll();
     }
 
+    @PostReadBankAccount
     BankAccount findById(long id) {
         return bankAccountRepository.findById(id).orElse(null);
     }
 
+    @PreWriteBankAccount("#toSave")
     @Transactional
     BankAccount save(BankAccount toSave) {
         return bankAccountRepository.save(toSave);
     }
 
+    @PreWriteBankAccount("#toUpdate")
     @Transactional
     boolean update(long id, BankAccount toUpdate) {
         return bankAccountRepository.updateBankAccount(id, toUpdate.getBalance()) == 1;
