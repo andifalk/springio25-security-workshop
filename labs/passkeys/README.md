@@ -157,16 +157,23 @@ We will now see how to register and use a Passkey in the next section.
 
 ##### 1.Login with username and password
 
-First login using the standard login with username and password. Use `user` and `password` as credentials.  
+First login again using the standard login with username and password. Use `user` and `password` as credentials. Otherwise, we are not able to register the Passkey.
+
 ![Login Screen](image/login_with_passkeys.png "Login Screen")
 
 ##### 2.Register
 
 Click on the register link and follow the instructions to register your Passkey. You can use your browser's built-in Passkey support or a third-party application like 1Password.  
 The Passkey label is the name of the Passkey you want to register. You can use any name you like, but it is recommended to use a meaningful name that you can remember.
-   - If you are using a browser, you will be prompted to create a Passkey using the built-in Passkey support.
-   - If you are using 1Password, you will be prompted to create a Passkey using the 1Password application.
+
 ![Register Passkey](image/register_passkey.png "Register Passkey")
+
+If you are using a third-party authenticator like [1Password](https://1password.com/solutions/passwordless), you will be prompted to create a Passkey using the 1Password application.
+
+![Register Passkey in 1Passwords](image/register_1password.png "Register Passkey in 1Password")
+
+If you are using a browser on a supported operating system, you will be prompted to create a Passkey using the built-in Passkey support (i.e., Apple Password or Windows Hello).
+
 ![Register Passkey in Apple Passwords](image/register_app_passwords.png "Register Passkey in Apple Passwords")
 
 ##### 3.Login with Passkey
@@ -176,7 +183,12 @@ Now click on the **Login with Passkey** link and follow the instructions to log 
 
 > 💡 **Note**: The concrete Passkey flow is dependent on your operating system, installed applications (i.e., if you use an external password manager that supports Passkeys) and your configuration.
 
-You will be prompted to select the Passkey you want to use.
+In case you have a configured third-party authenticator, you will be prompted to use that authenticator to log in.
+
+![Login with 1Password](image/sign_in_passkey_1password.png "Login with 1Password")
+
+If you want to use another passkey or another device, you can select the Passkey you want to use. This is the cross-device feature of Passkeys.  
+You will then be prompted to select the Passkey you want to use.
 ![Select Authenticator](image/authenticator_selection.png "Select Authenticator")
 
 4. **Hello API**: After logging in with the Passkey, you will be redirected to the welcome page. Click on the **Call Hello API** link to call the testing API that welcomes you as a user.
@@ -212,6 +224,11 @@ public class HelloApi {
 - If you are authenticating with a username and password, the `principal` will be of type `User`.
 - If you are authenticating with a Passkey, the `principal` will be of type `PublicKeyCredentialUserEntity`.
 
+✅ That's it! You have successfully implemented Passkeys authentication in your Spring Boot application. 
+
+>💡 **Note**: The optional lab 2 shows how to implement Passkeys with a secure local domain. This lab is intended to be done as *home work*. Instead, we will proceed with the next topic **Enhanced Authorization**.
+
+---
 
 ## 🔹 Lab 2: Passkeys with a secure local domain (optional lab)
 
@@ -225,9 +242,9 @@ In addition to the previous lab prerequisites, you need the following:
 
 #### mkcert
 
-To quickly set up a TLS configuration required for Passkeys, we need to install the tool [mkcert](https://github.com/FiloSottile/mkcert). [mkcert](https://github.com/FiloSottile/mkcert) is a simple tool for making locally-trusted development certificates.
+To quickly set up a TLS configuration required for Passkeys, we need to install the tool [mkcert](https://github.com/FiloSottile/mkcert). [mkcert](https://github.com/FiloSottile/mkcert) is a simple tool for making locally trusted development certificates.
 
-On **MacOS**, you can install [mkcert](https://github.com/FiloSottile/mkcert) using Homebrew:
+On **macOS**, you can install [mkcert](https://github.com/FiloSottile/mkcert) using Homebrew:
 
 ```bash
 brew install mkcert
@@ -262,7 +279,7 @@ Therefore, this sample is configured for https://server.test:8433 address.
 - `.invalid`
 - `.localhost`
 
-To enable this local domain on your machine, on **MacOS** and **Linux** you need to add the following entry to your `/etc/hosts` file:
+To enable this local domain on your machine, on **macOS** and **Linux** you need to add the following entry to your `/etc/hosts` file:
 
 ```shell
 127.0.0.1 server.test
@@ -288,23 +305,12 @@ mkcert -p12-file server-keystore.p12 -pkcs12 127.0.0.1 localhost server.test
 
 Finally, copy the generated `server-keystore.p12` file to the `src/main/resources` directory of the `passkeys` module.
 
+The application is configured to use the `server-keystore.p12` file for TLS.
+
 ### Step 2: Extend the application for Passkeys
 
-The `passkeys-demo` module contains a simple Spring Boot application that demonstrates how to use Passkeys for authentication. The application is configured to use the `server-keystore.p12` file for TLS.
-
-The application already contains the necessary dependencies for Passkeys. You can find the configuration in the `pom.xm` file.
-
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-security</artifactId>
-</dependency>
-<dependency>
-    <groupId>com.webauthn4j</groupId>
-    <artifactId>webauthn4j-core</artifactId>
-    <version>0.29.0.RELEASE</version>
-</dependency>
-```
+Same as in Lab1, we need to extend the `WebSecurityConfiguration` class to enable Passkeys.
+But this time we need to change the `rpId` and `allowedOrigins` to match the secure `.test` domain.
 
 ```java
 @Configuration
@@ -342,10 +348,8 @@ Start the application in your IDE or using the maven spring boot plugin with
 ./mvnw spring-boot:run
 ```
 
-Now navigate your browser to [https://server.test:8443](https://server.test:8443). First, you need to log in with the user credentials user/password. Now you should see a welcome page with the following links:
+Now navigate your browser to [https://server.test:8443](https://server.test:8443).
 
-- **Register**: Click on this link to register your user for a Passkey (using Keychain on Mac, Browser, 1Password, etc.)
-- **Hello**: This calls a testing API that welcomes you as a user
-- **Log Out**: Force a logout, i.e., to test logging in using a passkey
+The remainder of the lab is the same as in Lab 1. You can follow the same steps as described in the test scenario of Lab 1 to test the Passkey authentication.
 
-The remainder of the lab is the same as in Lab 1. You can follow the same steps as in Lab 1 to test the Passkey authentication.
+✅ That's it! You have successfully implemented Passkeys authentication in your Spring Boot application. And you have done this in a secure way using a local domain and TLS.
