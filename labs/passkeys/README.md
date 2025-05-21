@@ -45,7 +45,7 @@ Then navigate to [localhost:8080](http://localhost:8080).
 
 First you need to log in with the user credentials `user` and `password`.
 
-![Login Screen](image/login_with_passkeys.png "Login Screen")
+![Login Screen](image/username_login.png "Login Screen")
 
 You should see a welcome page with the following links:
 
@@ -54,6 +54,8 @@ You should see a welcome page with the following links:
 - **Log Out**: Force a logout, i.e., to test logging in using a passkey
 
 ![Passkey Demo](image/password_demo_app.png "Passkeys Demo")
+
+> 💡 **Note**: The **Register** link will cause an error as we have not yet configured Passkeys hence the registration URL does not exist.
 
 Before continuing to the next step, stop the application using `Ctrl+C` in the terminal or using your IDE.
 
@@ -126,44 +128,55 @@ public class WebSecurityConfiguration {
 
    ⚠️ rpId must match the origin used in the browser, e.g.:
    - If your frontend runs at https://login.example.com, then rpId can be example.com
-   - If it’s https://localhost, your rpId must be localhost
+   - If it’s http://localhost, your rpId must be localhost
 
 3. **.allowedOrigins**("https://example.com")
    - Defines which origins are allowed to initiate WebAuthn operations.
    - Origin = scheme + domain + port, e.g. https://example.com:443
    - Helps prevent WebAuthn requests from unauthorized websites (same-origin policy enforcement).
 
-✅ Must exactly match what the browser sees — including https and any custom port.
+✅ Must exactly match what the browser sees as URL — including https and any custom port.
 
 ---
 
 ### Step 3: Run the application (with Passkeys)
 
-Start the application in your IDE or using the maven spring boot plugin with 
+Restart the application in your IDE or using the maven spring boot plugin with 
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-Now navigate your browser to [localhost:8080](http://localhost:8080). First, you need to log in with the user credentials user/password. Now you should see a welcome page with the following links:
+Now navigate your browser to [localhost:8080](http://localhost:8080). 
 
-- **Register**: Click on this link to register your user for a Passkey (using Keychain on Mac, Browser, 1Password, etc.)
-- **Hello**: This calls a testing API that welcomes you as a user
-- **Log Out**: Force a logout, i.e., to test logging in using a passkey
+You will notice already that the login page has changed. In addition to the standard login, you can now log in using your Passkey.
+
+We will now see how to register and use a Passkey in the next section.
 
 #### Test Scenario
 
-1. **Login**: First login using the standard login with username and password. Use `user` and `password` as credentials.  
+##### 1.Login with username and password
+
+First login using the standard login with username and password. Use `user` and `password` as credentials.  
 ![Login Screen](image/login_with_passkeys.png "Login Screen")
 
-2. **Register**: Click on the register link and follow the instructions to register your Passkey. You can use your browser's built-in Passkey support or a third-party application like 1Password.  
+##### 2.Register
+
+Click on the register link and follow the instructions to register your Passkey. You can use your browser's built-in Passkey support or a third-party application like 1Password.  
 The Passkey label is the name of the Passkey you want to register. You can use any name you like, but it is recommended to use a meaningful name that you can remember.
    - If you are using a browser, you will be prompted to create a Passkey using the built-in Passkey support.
    - If you are using 1Password, you will be prompted to create a Passkey using the 1Password application.
 ![Register Passkey](image/register_passkey.png "Register Passkey")
 ![Register Passkey in Apple Passwords](image/register_app_passwords.png "Register Passkey in Apple Passwords")
 
-3. **Login with Passkey**: After registering your Passkey, you can log in using the Passkey. First log out of the application using the URL [http://localhost:8080/logout](http://localhost:8080/logout). Now click on the **Login with Passkey** link and follow the instructions to log in using the Passkey. You will be prompted to select the Passkey you want to use.
+##### 3.Login with Passkey
+
+After registering your Passkey, you can log in using the Passkey. But first we need to log out of the application using the URL [http://localhost:8080/logout](http://localhost:8080/logout) to force getting the login screen again.  
+Now click on the **Login with Passkey** link and follow the instructions to log in using the Passkey. 
+
+> 💡 **Note**: The concrete Passkey flow is dependent on your operating system, installed applications (i.e., if you use an external password manager that supports Passkeys) and your configuration.
+
+You will be prompted to select the Passkey you want to use.
 ![Select Authenticator](image/authenticator_selection.png "Select Authenticator")
 
 4. **Hello API**: After logging in with the Passkey, you will be redirected to the welcome page. Click on the **Call Hello API** link to call the testing API that welcomes you as a user.
