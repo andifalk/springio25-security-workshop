@@ -4,7 +4,17 @@
 
 Learn how authentication with Passkeys works and is implemented using Spring Security.
 
-More details on Passkeys can be found in the [passkeys.dev](https://passkeys.dev/) and the [WebAuthn Overview](https://webauthn.guide/). You may also have a look into the specifications of [WebAuthn](https://www.w3.org/TR/webauthn-2/), [Client to Authenticator Protocol (CTAP)](https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html) and [FIDO2](https://fidoalliance.org/fido2/).
+### 📖 Background
+
+It is often a bit confusing to understand the difference between Passkeys, FIDO2 and WebAuthn. To clarify this, here is a short overview with a few analogies:
+
+- 🧱 WebAuthn: This is the Engine
+- 🛞 Passkeys: The user-friendly car built around it
+- 🛞 Passkeys are FIDO2 sign-in credentials
+
+More details on Passkeys can be found in the [passkeys.dev](https://passkeys.dev/) and the [WebAuthn Overview](https://webauthn.guide/).  
+You may also have a look into the specifications of [WebAuthn](https://www.w3.org/TR/webauthn-2/), [Client to Authenticator Protocol (CTAP)](https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html) and [FIDO2](https://fidoalliance.org/fido2/).
+
 
 Details on implementing for Passkeys can be found in the [Spring Security Reference Documentation](https://docs.spring.io/spring-security/reference/servlet/authentication/passkeys.html).
 
