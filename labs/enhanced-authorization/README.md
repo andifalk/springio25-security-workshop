@@ -568,3 +568,7 @@ public class BankAccountService {
 2. Re-test the API.
     - All authorizations should work now as expected.
     - If the user has restricted access rights, the account number is being masked out.
+
+✅ That's it! You have successfully implemented the really important authorization part in your Spring Boot application.  
+
+ Let's now move on to the next section, where we will look into the OAuth2 Token Exchange.

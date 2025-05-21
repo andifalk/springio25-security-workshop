@@ -688,6 +688,14 @@ Now that we have implemented the token exchange, we need to restart the token ex
 
 After it successfully has restarted, retry the complete flow by navigating to [http://localhost:8080/api/hello](http://localhost:8080/api/hello) in your browser. This time the complete flow should work successfully, and you should see a message from the target resource server.
 
+✅ **Congratulations:** You have implemented a complete OAuth2 Token Exchange flow using Spring Security and Spring Authorization Server. You have learned how to configure the authorization server, the client application, the token exchange resource server, and the target resource server. You have also learned how to perform the token exchange and call the target resource server with the exchanged token.
+
 ---
 
-✅ **Congratulations:** You have implemented a complete OAuth2 Token Exchange flow using Spring Security and Spring Authorization Server. You have learned how to configure the authorization server, the client application, the token exchange resource server, and the target resource server. You have also learned how to perform the token exchange and call the target resource server with the exchanged token.
+✅ That also completes the workshop! You have learned about three important features of Spring Security
+
+1. Passkeys
+2. Enhanced Authorization (i.e., authorize domain objects)
+3. OAuth2 Token Exchange
+
+If you have any questions or feedback, please feel free to reach out to me (via LinkedIn). I hope you enjoyed the workshop and learned something new!
