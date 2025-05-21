@@ -182,8 +182,8 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
 ```
 
 Please notice the `updateBankAccount` method. It contains a custom query that updates the balance of a bank account only if the owner of the account matches the currently authenticated user.  
-This is an example of how to use Spring Security to restrict access to data based on the user's role. This is basically done by using the `?#{principal?.username}` expression in the query.  
-This is enabled through the Spring Data Security extension defined in class `WebSecurityConfiguration`.
+This is basically done by using the `?#{principal?.username}` expression in the query.  
+This expression extension is enabled through the corresponding Spring Data Security extension defined in class `WebSecurityConfiguration`.
 
 ```java
 import org.springframework.security.data.repository.query.SecurityEvaluationContextExtension;
@@ -301,7 +301,7 @@ public List<Document> findAll() {
 }
 ```
 
-🧠 This is useful when returning a list of domain objects and you want to hide some from the caller.
+🧠 This is useful when returning a list of domain objects, and you want to hide some from the caller.
 
 ✅ @AuthorizeReturnObject (Spring Security 6.3+)
 
