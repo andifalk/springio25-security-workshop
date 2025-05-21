@@ -37,7 +37,9 @@ brew install jq
 ```
 ### Postman
 
-If you prefer using a GUI tool, you can use [Postman](https://www.postman.com/) to test the APIs. Postman is a popular API development and testing tool that allows you to send HTTP requests and view responses in a user-friendly interface. You can download Postman from the official website and install it on your machine. Note: Postman is not free anymore for commercial use!
+If you prefer using a GUI tool, you can use [Postman](https://www.postman.com/) to test the APIs. Postman is a popular API development and testing tool that allows you to send HTTP requests and view responses in a user-friendly interface. You can download Postman from the official website and install it on your machine. 
+
+> 💡 **Note**: Postman poses some risk when storing collections in the cloud. If you are using Postman, make sure to use it in a private workspace (requires a commercial license) and do not share your collections with others. One alternative would be to use [Bruno](https://www.usebruno.com) which is an open-source alternative to Postman.
 
 ## Step 2: Clone the repository
 

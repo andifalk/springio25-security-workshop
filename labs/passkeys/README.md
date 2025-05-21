@@ -14,7 +14,7 @@ Check if your operating system supports Passkeys. If not, you can use a cross-de
 
 ![Passkeys on different OS](image/how_passkeys_work_on_different_os.png "Passkeys Support on different OS")
 
-Note: Passkeys are supported to run on localhost without any TLS certificate. However, this is not recommended for production use. For production use, you need a valid TLS certificate for your domain.
+> 💡 **Note:** Passkeys are supported to run on `localhost` without any TLS certificate. However, this is not recommended for production use. For production use, you need a valid TLS certificate for your domain.
 
 ![Passkeys on different domains](image/passkeys_on_localhost.png "Passkeys Support on different Domains")
 
@@ -26,8 +26,18 @@ Note: Passkeys are supported to run on localhost without any TLS certificate. Ho
 
 The `passkeys` directory contains a simple Spring Boot application that demonstrates how to use Passkeys for authentication. The application is configured with a main index.html page containing all important links for the demonstration scenario.
 
-Start the application using your IDE or using the maven spring boot plugin with `./mvnw springboot:run`.
-Then navigate to [localhost:8080](http://localhost:8080). You should see a welcome page with the following links:
+Start the application using your IDE or using the maven spring boot plugin with 
+```bash
+./mvnw spring-boot:run
+```
+
+Then navigate to [localhost:8080](http://localhost:8080). 
+
+First you need to log in with the user credentials `user` and `password`.
+
+![Login Screen](image/login_with_passkeys.png "Login Screen")
+
+You should see a welcome page with the following links:
 
 - **Register**: Click on this link to register your user for a Passkey (using Keychain on Mac, Browser, 1Password, etc.)
 - **Call Hello API**: This calls a testing API that welcomes you as a user
@@ -91,14 +101,14 @@ public class WebSecurityConfiguration {
 
 📌 Parameter Explanations
 
-1. .rpName("Spring Security Relying Party")
+1. **.rpName**("Spring Security Relying Party")
    - rpName = “Relying Party Name”
    - Human-readable name of your application or service (e.g. "GitHub" or "MyApp").
    - Shown to users during credential registration (passkey creation) in browser prompts.
    
     🧠 Think of it as the “display name” of your app during passkey registration.
 
-2. .rpId("example.com")
+2. **.rpId**("example.com")
    - rpId = “Relying Party ID”
    - The domain name of the relying party (your service).
    - Used to scope the credential (passkey is only usable for this RP ID).
@@ -108,7 +118,7 @@ public class WebSecurityConfiguration {
    - If your frontend runs at https://login.example.com, then rpId can be example.com
    - If it’s https://localhost, your rpId must be localhost
 
-3. .allowedOrigins("https://example.com")
+3. **.allowedOrigins**("https://example.com")
    - Defines which origins are allowed to initiate WebAuthn operations.
    - Origin = scheme + domain + port, e.g. https://example.com:443
    - Helps prevent WebAuthn requests from unauthorized websites (same-origin policy enforcement).
@@ -119,7 +129,11 @@ public class WebSecurityConfiguration {
 
 ### Step 3: Run the application (with Passkeys)
 
-Start the application in your IDE or using the maven spring boot plugin with `./mvnw springboot:run`.
+Start the application in your IDE or using the maven spring boot plugin with 
+
+```bash
+./mvnw spring-boot:run
+```
 
 Now navigate your browser to [localhost:8080](http://localhost:8080). First, you need to log in with the user credentials user/password. Now you should see a welcome page with the following links:
 
@@ -129,17 +143,17 @@ Now navigate your browser to [localhost:8080](http://localhost:8080). First, you
 
 #### Test Scenario
 
-1. **Login**: First login using the standard login with username and password. Use `user` and `password` as credentials.
+1. **Login**: First login using the standard login with username and password. Use `user` and `password` as credentials.  
 ![Login Screen](image/login_with_passkeys.png "Login Screen")
 
 2. **Register**: Click on the register link and follow the instructions to register your Passkey. You can use your browser's built-in Passkey support or a third-party application like 1Password.  
-The Passkey label is the name of the Passkey you want to register. You can use any name you like, but it is recommended to use a meaningful name.
+The Passkey label is the name of the Passkey you want to register. You can use any name you like, but it is recommended to use a meaningful name that you can remember.
    - If you are using a browser, you will be prompted to create a Passkey using the built-in Passkey support.
    - If you are using 1Password, you will be prompted to create a Passkey using the 1Password application.
 ![Register Passkey](image/register_passkey.png "Register Passkey")
 ![Register Passkey in Apple Passwords](image/register_app_passwords.png "Register Passkey in Apple Passwords")
 
-3. **Login with Passkey**: After registering your Passkey, you can log in using the Passkey. First log out of the application using the URL ``. Now click on the **Login with Passkey** link and follow the instructions to log in using the Passkey. You will be prompted to select the Passkey you want to use.
+3. **Login with Passkey**: After registering your Passkey, you can log in using the Passkey. First log out of the application using the URL [http://localhost:8080/logout](http://localhost:8080/logout). Now click on the **Login with Passkey** link and follow the instructions to log in using the Passkey. You will be prompted to select the Passkey you want to use.
 ![Select Authenticator](image/authenticator_selection.png "Select Authenticator")
 
 4. **Hello API**: After logging in with the Passkey, you will be redirected to the welcome page. Click on the **Call Hello API** link to call the testing API that welcomes you as a user.
@@ -149,8 +163,7 @@ If you have used your phone or another device to register the Passkey, you will 
 ![Phone Authenticator](image/phone_authenticator.png "Phone Authenticator")
 
 
-**Note**
-Look inside the `src/main/java/com/example/passkeys/HelloApi.java` class to see how the `Principle` differs depending on the Authentication mechanism. 
+> 💡 **Note**: Look inside the `src/main/java/com/example/passkeys/HelloApi.java` class to see how the `Principle` differs depending on the Authentication mechanism. 
 
 ```java
 @RestController
@@ -172,6 +185,9 @@ public class HelloApi {
     }
 }
 ```
+
+- If you are authenticating with a username and password, the `principal` will be of type `User`.
+- If you are authenticating with a Passkey, the `principal` will be of type `PublicKeyCredentialUserEntity`.
 
 
 ## 🔹 Lab 2: Passkeys with a secure local domain (optional lab)
@@ -297,7 +313,11 @@ public class WebSecurityConfiguration {
 
 ### Step 3: Run the application
 
-Start the application in your IDE or using the maven spring boot plugin with `./mvnw springboot:run`.
+Start the application in your IDE or using the maven spring boot plugin with 
+
+```bash
+./mvnw spring-boot:run
+```
 
 Now navigate your browser to [https://server.test:8443](https://server.test:8443). First, you need to log in with the user credentials user/password. Now you should see a welcome page with the following links:
 

@@ -62,7 +62,7 @@ public class BankAccount extends AbstractPersistable<Long> {
 The application uses a simple in-memory database (H2) to store the bank accounts.
 The `BankAccount` entity class extends the `AbstractPersistable` class, which provides a simple way to manage the entity's ID and version.
 
-**Note, if Spring Security 6.3 is used:**
+> 💡 **if Spring Security 6.3 is used:**
 As we will use Jackson (for JSON), we need to set the annotation `@JsonSerialize(as = BankAccount.class)` on top of the class. This is due to how Jackson works with CGLIB proxies (Spring Security needs proxies to make enhanced authorizations work).
 Otherwise, this may result in a serialization error like the following:
 `com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Direct self-reference leading to cycle`
@@ -197,7 +197,13 @@ And it also requires a special dependency in the `pom.xml`:
 </dependency>
 ```
 
-Let's start the application (`./mvnw spring-boot:run`) and test the API with the following credentials:
+Let's start the application with:
+
+```bash
+./mvnw spring-boot:run
+```
+
+and test the API with the following credentials:
 
 | Username   | Password | Role(s)          |
 |------------|----------|------------------|

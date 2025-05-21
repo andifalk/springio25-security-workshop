@@ -2,6 +2,7 @@
 *.class
 
 .idea/
+.vscode/settings.json
 
 # Log file
 *.log
