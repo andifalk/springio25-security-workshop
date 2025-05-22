@@ -10,3 +10,6 @@ spring:
 
 server:
   port: 9092
+logging:
+  level:
+    org.springframework.security: debug
