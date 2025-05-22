@@ -350,6 +350,25 @@ Now it is the time to add the missing authorization to the application.
 
 At first let's create some custom Authorization annotations to show the [Annotations Parameters](https://docs.spring.io/spring-security/reference/6.3/whats-new.html#_annotation_parameters_14480) feature introduced in Spring Security 6.3. Later we will add these to the `BankAccountService` class.
 
+To make method-level authorization generally work, we need to add the `@EnableMethodSecurity` annotation to the `WebSecurityConfiguration` class. If you want to use Annotation Parameters, you have to opt in Templating Meta-Annotation Expressions, a new feature introduced in Spring Security 6.3. For this we have to publish an `AnnotationTemplateExpressionDefaults` bean.
+
+```java
+@EnableMethodSecurity
+@EnableWebSecurity
+@Configuration
+public class WebSecurityConfiguration {
+
+    // other beans omitted
+
+    @Bean
+    public static AnnotationTemplateExpressionDefaults annotationTemplateExpressionDefaults() {
+        return new AnnotationTemplateExpressionDefaults();
+    }
+
+    // more beans omitted
+}
+```
+
 The `PreGetBankAccounts` and `PreWriteBankAccount` annotations are custom security annotations that are used to restrict access to the methods based on the user's role and ownership of the bank account. Please create these two classes in the `security` package.
 
 **PreGetBankAccounts:**
