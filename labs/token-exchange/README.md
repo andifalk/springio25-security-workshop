@@ -71,12 +71,12 @@ The scenario that will be implemented is as follows:
    new access token for the target resource server (http://localhost:9092).
 4. The target resource server (http://localhost:9092) when called with the exchanged access token, will check for expected audience claim value.
 
-| Address               | App Component                  | Description                                                                                                                      |
-|-----------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| http://localhost:9000 | Spring Authorization Server    | The Authorization Server issuing all tokens                                                                                      |
-| http://localhost:8080 | OAuth2 Client Application      | The client application triggering the flow by logging in to the Authorization Server and calling the first resource server       |
-| http://localhost:9091 | Token Exchange Resource Server | The first resource server being called by the client and performing the token exchange before calling the target resource server |
-| http://localhost:9092 | Target Resource Server         | The final target resource server being called with the exchanged token                                                           |
+| Address                      | App Component                  | Description                                                                                                                      |
+|------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| http://localhost:9000        | Spring Authorization Server    | The Authorization Server issuing all tokens                                                                                      |
+| http://localhost:8080/client | OAuth2 Client Application      | The client application triggering the flow by logging in to the Authorization Server and calling the first resource server       |
+| http://localhost:9091        | Token Exchange Resource Server | The first resource server being called by the client and performing the token exchange before calling the target resource server |
+| http://localhost:9092        | Target Resource Server         | The final target resource server being called with the exchanged token                                                           |
 
 ### Step 2: The Spring Authorization Server
 
@@ -111,8 +111,14 @@ public class SingleTenantClientConfiguration {
                 })
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
-                .postLogoutRedirectUri("http://127.0.0.1:8080/")
+                .redirectUris(u -> {
+                    u.add("http://127.0.0.1:8080/client/login/oauth2/code/messaging-client-oidc");
+                    u.add("http://localhost:8080/client/login/oauth2/code/messaging-client-oidc");
+                })
+                .postLogoutRedirectUris(u -> {
+                    u.add("http://127.0.0.1:8080/client/");
+                    u.add("http://localhost:8080/client/");
+                })
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope(OidcScopes.EMAIL)
@@ -221,7 +227,7 @@ spring:
             client-id: messaging-client
             client-authentication-method: none
             authorization-grant-type: authorization_code
-            redirect-uri: "http://127.0.0.1:8080/login/oauth2/code/{registrationId}"
+            redirect-uri: "http://localhost:8080/client/login/oauth2/code/{registrationId}"
             scope: openid, profile
             client-name: messaging-client-oidc
         provider:
@@ -245,6 +251,9 @@ public class WebSecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().authenticated()
                 )
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s ->
+                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2Client(Customizer.withDefaults());
         return http.build();
@@ -304,7 +313,7 @@ Start the OAuth2 Client Application by running the `TokenExchangeClientApplicati
 ./mvnw spring-boot:run
 ```
 
-The OAuth2 Client Application will be available at [http://localhost:8080/api/hello](http://localhost:8080/api/hello). If you navigate to this address in your browser, you will be redirected to the login page of the authorization server. Please do not continue at this point. We will continue from this point in the next steps.
+The OAuth2 Client Application will be available at [http://localhost:8080/client/api/hello](http://localhost:8080/client/api/hello). If you navigate to this address in your browser, you will be redirected to the login page of the authorization server. Please do not continue at this point. We will continue from this point in the next steps.
 
 ---
 
@@ -344,13 +353,16 @@ public class WebSecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().authenticated()
                 )
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s ->
+                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(r -> r.jwt(withDefaults()));
         return http.build();
     }
 }
 ```
 
-In summary the configuration of the target resource server is as follows:
+In summary, the configuration of the target resource server is as follows:
 
 - Configures the application as a resource server that validates JWTs.
 - issuer-uri: The URL of the OAuth 2.0 authorization server (usually the OpenID Provider).
@@ -426,6 +438,9 @@ public class WebSecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .anyRequest().authenticated()
                 )
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s ->
+                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(r -> r.jwt(Customizer.withDefaults()))
                 .oauth2Client(Customizer.withDefaults());
         return http.build();
