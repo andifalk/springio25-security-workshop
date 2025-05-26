@@ -223,7 +223,7 @@ spring:
             client-id: messaging-client
             client-authentication-method: none
             authorization-grant-type: authorization_code
-            redirect-uri: "http://localhost:8080/client/login/oauth2/code/{registrationId}"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope: openid, profile
             client-name: messaging-client-oidc
         provider:
