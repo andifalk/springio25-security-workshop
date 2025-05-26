@@ -50,10 +50,6 @@ public class SingleTenantClientConfiguration {
                     u.add("http://127.0.0.1:8080/client/login/oauth2/code/messaging-client-oidc");
                     u.add("http://localhost:8080/client/login/oauth2/code/messaging-client-oidc");
                 })
-                .postLogoutRedirectUris(u -> {
-                    u.add("http://127.0.0.1:8080/client/");
-                    u.add("http://localhost:8080/client/");
-                })
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope(OidcScopes.EMAIL)

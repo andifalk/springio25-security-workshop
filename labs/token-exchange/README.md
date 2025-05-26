@@ -115,10 +115,6 @@ public class SingleTenantClientConfiguration {
                     u.add("http://127.0.0.1:8080/client/login/oauth2/code/messaging-client-oidc");
                     u.add("http://localhost:8080/client/login/oauth2/code/messaging-client-oidc");
                 })
-                .postLogoutRedirectUris(u -> {
-                    u.add("http://127.0.0.1:8080/client/");
-                    u.add("http://localhost:8080/client/");
-                })
                 .scope(OidcScopes.OPENID)
                 .scope(OidcScopes.PROFILE)
                 .scope(OidcScopes.EMAIL)
@@ -248,12 +244,15 @@ public class WebSecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated()
+                .authorizeHttpRequests(authorize -> {
+                            authorize
+                                    .requestMatchers("/login/**","/error/**").permitAll()
+                                    .anyRequest().authenticated();
+                        }
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s ->
-                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        s.sessionCreationPolicy(SessionCreationPolicy.NEVER))
                 .oauth2Login(Customizer.withDefaults())
                 .oauth2Client(Customizer.withDefaults());
         return http.build();
@@ -271,7 +270,7 @@ The corresponding rest controller is implemented in the `ClientApi` class:
 
 ```java
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/")
 public class ClientApi {
     private static final Logger LOG = LoggerFactory.getLogger(ClientApi.class);
     private static final String TARGET_RESOURCE_SERVER_URL = "http://localhost:9091/api/messages";
@@ -281,8 +280,16 @@ public class ClientApi {
         this.restClient = restClient;
     }
 
-    @GetMapping("/hello")
-    public String hello(@RegisteredOAuth2AuthorizedClient("messaging-client-oidc") OAuth2AuthorizedClient oauth2AuthorizedClient) {
+    @GetMapping
+    public String index(@AuthenticationPrincipal OidcUser user) {
+        return "<html><body><title>Hello</title><p>Hello '" +
+                user.getSubject() + " (" + user.getAuthorizedParty() + ")" +
+                "' from the Token Exchange Client!</p></br><p>" +
+                "Use the <a href=\"/client/api/hello\">/api/hello</a> endpoint to access the resource server.</p></body></html>";
+    }
+
+    @GetMapping("/api/hello")
+    public String hello(@RegisteredOAuth2AuthorizedClient(registrationId = "messaging-client-oidc") OAuth2AuthorizedClient oauth2AuthorizedClient) {
 
         LOG.info("Got authenticated OAuth2 client {}", oauth2AuthorizedClient.getClientRegistration().getClientId());
 
@@ -290,7 +297,9 @@ public class ClientApi {
                 .headers(headers -> headers.setBearerAuth(oauth2AuthorizedClient.getAccessToken().getTokenValue()))
                 .retrieve();
 
-        return responseSpec.toEntity(String.class).getBody();
+        String messageFromResourceServer = responseSpec.toEntity(String.class).getBody();
+        return "<html><body><title>Hello</title><p>Hello from the Token Exchange Client!</p></br><p>" +
+                "The resource server says: <strong>" + messageFromResourceServer + "</strong></p></body></html>";
     }
 }
 ```
@@ -313,7 +322,7 @@ Start the OAuth2 Client Application by running the `TokenExchangeClientApplicati
 ./mvnw spring-boot:run
 ```
 
-The OAuth2 Client Application will be available at [http://localhost:8080/client/api/hello](http://localhost:8080/client/api/hello). If you navigate to this address in your browser, you will be redirected to the login page of the authorization server. Please do not continue at this point. We will continue from this point in the next steps.
+The OAuth2 Client Application will be available at [http://localhost:8080/client](http://localhost:8080/client). If you navigate to this address in your browser, you will be redirected to the login page of the authorization server. Please do not continue at this point. We will continue from this point in the next steps.
 
 ---
 
@@ -333,7 +342,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
           audiences: http://localhost:9092/api/messages
 
 server:
@@ -404,7 +413,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9000
+          jwk-set-uri: http://localhost:9000/oauth2/jwks
       client:
         registration:
           messaging-client-token-exchange:
@@ -464,7 +473,7 @@ The Token Exchange Resource Server will be available at [http://localhost:9091/a
 
 As we started all the applications, we can now try the complete flow.
 
-1. Open your browser and navigate to [http://localhost:8080/api/hello](http://localhost:8080/api/hello).
+1. Open your browser and navigate to [http://localhost:8080/client](http://localhost:8080/client).
 2. You will be redirected to the login page of the authorization server.
 3. Log in with the user credentials `user/password`.
 4. You will be redirected back to the client application and see a greeting message, but it will not show the message from the target resource server. That is because it just uses the token from the client application to call the target resource server.
@@ -588,7 +597,7 @@ public OAuth2AccessTokenResponseClient<TokenExchangeGrantRequest> accessTokenRes
 
 #### Extend the Rest API endpoint to perform the Token Exchange
 
-The final step is to extend the existing API endpoint `/api/message` to perform the token exchange with the authorization server and successfully call the target resource server with the exchanged token.
+The final step is to extend the existing API endpoint `/api/messages` to perform the token exchange with the authorization server and successfully call the target resource server with the exchanged token.
 
 To achieve this, we need to change the `ClientApi` class to use the `OAuth2AuthorizedClientManager` to perform the token exchange and call the target resource server with the exchanged token.
 
@@ -650,7 +659,7 @@ public class MessageApi {
                 .retrieve();
         ResponseEntity<String> responseEntity = responseSpec.toEntity(String.class);
         LOG.info("Successfully called the target resource server with exchanged token");
-        return "I am a message from the token exchange resource server with " + responseEntity.getBody();
+        return "I am the token exchange resource server with a message from the target resource server: \n" + responseEntity.getBody();
     }
 }
 ```
@@ -703,7 +712,7 @@ Now that we have implemented the token exchange, we need to restart the token ex
 ./mvnw spring-boot:run
 ```
 
-After it successfully has restarted, retry the complete flow by navigating to [http://localhost:8080/api/hello](http://localhost:8080/api/hello) in your browser. This time the complete flow should work successfully, and you should see a message from the target resource server.
+After it successfully has restarted, retry the complete flow by navigating to [http://localhost:8080/client](http://localhost:8080/client) in your browser. This time the complete flow should work successfully, and you should see a message from the target resource server.
 
 ✅ **Congratulations:** You have implemented a complete OAuth2 Token Exchange flow using Spring Security and Spring Authorization Server. You have learned how to configure the authorization server, the client application, the token exchange resource server, and the target resource server. You have also learned how to perform the token exchange and call the target resource server with the exchanged token.
 
